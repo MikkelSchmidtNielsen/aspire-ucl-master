@@ -1,0 +1,3 @@
+rootProject.name = 'aspire-master'
+
+include 'aspire-challenge-01'
