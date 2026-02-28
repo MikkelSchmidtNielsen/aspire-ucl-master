@@ -1,0 +1,19 @@
+version: 1
+common:
+  resourcesPath: ../shared/resources-simple
+apps:
+  - appDirPath: ./pizzaStorefront
+    appID: pizza-storefront
+    daprHTTPPort: 3502
+    appPort: 8002
+    command: ["cmd", "/c", "..\\..\\gradlew.bat :dapr-challenge-02:pizzaStorefront:bootRun"]
+  - appDirPath: ./pizzaKitchen
+    appID: pizza-kitchen
+    daprHTTPPort: 3503
+    appPort: 8003
+    command: ["cmd", "/c", "..\\..\\gradlew.bat :dapr-challenge-02:pizzaKitchen:bootRun"]
+  - appDirPath: ./pizzaDelivery
+    appID: pizza-delivery
+    daprHTTPPort: 3504
+    appPort: 8004
+    command: ["cmd", "/c", "..\\..\\gradlew.bat :dapr-challenge-02:pizzaDelivery:bootRun"]

@@ -1,0 +1,9 @@
+version: 1
+common:
+  resourcesPath: ../shared/resources-simple
+apps:
+  - appDirPath: .
+    appID: pizza-order
+    appPort: 8001
+    daprHTTPPort: 3501
+    command: ["cmd", "/c", "..\\gradlew.bat bootRun"]

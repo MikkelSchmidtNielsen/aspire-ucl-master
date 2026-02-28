@@ -1,4 +1,13 @@
 rootProject.name = 'aspire-master'
 
+include 'dapr-challenge-01'
+include 'dapr-challenge-02:pizzaDelivery'
+include 'dapr-challenge-02:pizzaKitchen'
+include 'dapr-challenge-02:pizzaStorefront'
+include 'dapr-challenge-03a:pizzaDelivery'
+include 'dapr-challenge-03a:pizzaKitchen'
+include 'dapr-challenge-03a:pizzaOrder'
+include 'dapr-challenge-03a:pizzaStorefront'
 include 'aspire-challenge-01'
 include 'aspire-challenge-02'
+
