@@ -4,8 +4,10 @@ import daprchallenge.pizzastorefront.interfaces.KitchenClient;
 import daprchallenge.pizzastorefront.models.Order;
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+@Component
 public class KitchenClientImpl implements KitchenClient {
     private static final String APP_ID = "pizza-kitchen";
     private static final String METHOD = "api/orders";

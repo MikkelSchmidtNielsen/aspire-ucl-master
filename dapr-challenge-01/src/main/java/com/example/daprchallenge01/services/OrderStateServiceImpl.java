@@ -13,7 +13,7 @@ import java.util.Objects;
 @Service
 public class OrderStateServiceImpl implements OrderStateService {
     private final DaprClient daprClient;
-    private final Logger logger = LoggerFactory.getLogger(OrderStateServiceImpl.class);;
+    private final Logger logger = LoggerFactory.getLogger(OrderStateServiceImpl.class);
     private final String STORE_NAME = "pizzastatestore";
 
     public OrderStateServiceImpl(DaprClient daprClient) {
