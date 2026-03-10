@@ -2,6 +2,7 @@ package daprchallenge.pizzadelivery.services;
 
 import daprchallenge.pizzadelivery.interfaces.DeliveryService;
 import daprchallenge.pizzadelivery.models.Order;
+import io.dapr.client.DaprClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,15 @@ import java.util.List;
 
 @Service
 public class DeliveryServiceImpl implements DeliveryService {
+    private final DaprClient daprClient;
+    private final String PUBSUB_NAME = "pizzapubsub";
+    private final String TOPIC_NAME = "orders";
     private final Logger logger = LoggerFactory.getLogger(DeliveryServiceImpl.class);
+
+    public DeliveryServiceImpl(DaprClient daprClient) {
+        this.daprClient = daprClient;
+    }
+
     record Stage(String status, int duration) { }
 
     @Override
@@ -32,18 +41,21 @@ public class DeliveryServiceImpl implements DeliveryService {
                     order.setStatus(stage.status());
                     logger.info("Order {} - {}", order.getOrderId(), stage.status());
 
-                    return Mono.delay(Duration.ofSeconds(stage.duration()));
+                    return daprClient.publishEvent(PUBSUB_NAME, TOPIC_NAME, order)
+                            .then(Mono.delay(Duration.ofSeconds(stage.duration())));
                 })
                 .then(Mono.defer(() -> {
                     order.setStatus("delivered");
-                    logger.info("Order {} - {}", order.getOrderId(), order.getStatus());
-                    return Mono.just(order);
+
+                    return daprClient.publishEvent(PUBSUB_NAME, TOPIC_NAME, order)
+                            .thenReturn(order);
                 }))
                 .onErrorResume(e -> {
                     logger.error("Error delivering order {}", order.getOrderId(), e);
                     order.setStatus("delivery_failed");
                     order.setError(e.getMessage());
-                    return Mono.just(order);
+                    return daprClient.publishEvent(PUBSUB_NAME, TOPIC_NAME, order)
+                            .thenReturn(order);
                 });
 
         return result;

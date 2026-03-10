@@ -1,5 +1,7 @@
 package daprchallenge.pizzastorefront.services;
 
+import daprchallenge.pizzastorefront.interfaces.DeliveryClient;
+import daprchallenge.pizzastorefront.interfaces.KitchenClient;
 import daprchallenge.pizzastorefront.interfaces.StorefrontService;
 import daprchallenge.pizzastorefront.models.Order;
 import io.dapr.client.DaprClient;
@@ -15,11 +17,20 @@ import java.util.List;
 
 @Service
 public class StorefrontServiceImpl implements StorefrontService {
-    private final Logger logger = LoggerFactory.getLogger(StorefrontServiceImpl.class);
-    private final DaprClient daprClient;
+    private final String PUBSUB_NAME = "pizzapubsub";
+    private final String TOPIC_NAME = "orders";
 
-    public StorefrontServiceImpl(DaprClient daprClient) {
+    private final DaprClient daprClient;
+    private final KitchenClient kitchenClient;
+    private final DeliveryClient deliveryClient;
+    private final Logger logger = LoggerFactory.getLogger(StorefrontServiceImpl.class);
+
+    public StorefrontServiceImpl(DaprClient daprClient,
+                                 KitchenClient kitchenClient,
+                                 DeliveryClient deliveryClient) {
         this.daprClient = daprClient;
+        this.kitchenClient = kitchenClient;
+        this.deliveryClient = deliveryClient;
     }
 
     record Stage(String status, int duration) {
@@ -38,30 +49,20 @@ public class StorefrontServiceImpl implements StorefrontService {
                     order.setStatus(stage.status());
                     logger.info("Order {} - {}", order.getOrderId(), stage.status());
 
-                    return Mono.delay(Duration.ofSeconds(stage.duration()));
+                    return daprClient.publishEvent(PUBSUB_NAME, TOPIC_NAME, order).
+                            then(Mono.delay(Duration.ofSeconds(stage.duration())));
                 })
                 .then(Mono.just(order));
 
-        var result = simulation.flatMap(pizzaOrder -> {
+        var result = simulation
+                .flatMap(pizzaOrder -> {
                     logger.info("Starting cooking process for order {}", pizzaOrder.getOrderId());
 
-                    return daprClient.invokeMethod(
-                            "pizza-kitchen",
-                            "cook",
-                            pizzaOrder,
-                            HttpExtension.POST,
-                            Order.class
-                    );
+                    return kitchenClient.sendToKitchen(pizzaOrder);
                 }).flatMap(cookedOrder -> {
                     logger.info("Starting delivery process for order {}", cookedOrder.getOrderId());
 
-                    return daprClient.invokeMethod(
-                            "pizza-delivery",
-                            "delivery",
-                            cookedOrder,
-                            HttpExtension.POST,
-                            Order.class
-                    );
+                    return deliveryClient.sendToDelivery(cookedOrder);
                 })
                 .doOnNext(deliveredOrder -> {
                     logger.info("Order {} delivered with status {}",
@@ -73,7 +74,8 @@ public class StorefrontServiceImpl implements StorefrontService {
                     order.setStatus("failed");
                     order.setError(e.getMessage());
 
-                    return Mono.just(order);
+                    return daprClient.publishEvent(PUBSUB_NAME, TOPIC_NAME, order)
+                            .thenReturn(order);
                 });
 
         return result;

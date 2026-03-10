@@ -2,6 +2,7 @@ package daprchallenge.pizzakitchen.services;
 
 import daprchallenge.pizzakitchen.interfaces.CookService;
 import daprchallenge.pizzakitchen.models.Order;
+import io.dapr.client.DaprClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,14 @@ import java.util.List;
 
 @Service
 public class CookServiceImpl implements CookService {
+    private final DaprClient daprClient;
+    private final String PUBSUB_NAME = "pizzapubsub";
+    private final String TOPIC_NAME = "orders";
     private final Logger logger = LoggerFactory.getLogger(CookServiceImpl.class);
+
+    public CookServiceImpl(DaprClient daprClient) {
+        this.daprClient = daprClient;
+    }
 
     record Stage(String status, int duration) {
     }
@@ -33,18 +41,20 @@ public class CookServiceImpl implements CookService {
                     order.setStatus(stage.status);
                     logger.info("Order {} - {}", order.getOrderId(), stage.status());
 
-                    return Mono.delay(Duration.ofSeconds(stage.duration()));
+                    return daprClient.publishEvent(PUBSUB_NAME, TOPIC_NAME, order)
+                            .then(Mono.delay(Duration.ofSeconds(stage.duration())));
                 })
                 .then(Mono.defer(() -> {
                     order.setStatus("cooked");
-                    logger.info("Order {} - {}", order.getOrderId(), order.getStatus());
-                    return Mono.just(order);
+                    return daprClient.publishEvent(PUBSUB_NAME, TOPIC_NAME, order)
+                            .thenReturn(order);
                 }))
                 .onErrorResume(e -> {
                     logger.error("Error cooking order {}", order.getOrderId(), e);
                     order.setStatus("cooking_failed");
                     order.setError(e.getMessage());
-                    return Mono.just(order);
+                    return daprClient.publishEvent(PUBSUB_NAME, TOPIC_NAME, order)
+                            .thenReturn(order);
                 });
 
         return result;
