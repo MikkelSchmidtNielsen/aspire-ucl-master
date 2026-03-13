@@ -1,0 +1,20 @@
+common:
+  resourcesPath: ../shared/resources
+apps:
+  - appDirPath: pizzaStorefront
+    appID: pizza-storefront
+    appPort: 8002
+    command: ["../../gradlew", ":dapr-challenge-03a:pizzaStorefront:bootRun"]
+  - appDirPath: pizzaKitchen
+    appID: pizza-kitchen
+    appPort: 8003
+    command: ["../../gradlew", ":dapr-challenge-03a:pizzaKitchen:bootRun"]
+  - appDirPath: pizzaDelivery
+    appID: pizza-delivery
+    appPort: 8004
+    command: ["../../gradlew", ":dapr-challenge-03a:pizzaDelivery:bootRun"]
+  - appDirPath: pizzaOrder
+    appID: pizzaorder
+    appPort: 8001
+    command: ["../../gradlew", ":dapr-challenge-03a:pizzaOrder:bootRun"]
+version: 1

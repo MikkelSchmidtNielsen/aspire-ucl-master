@@ -51,7 +51,6 @@ public class OrderController {
         return result;
     }
 
-    @Topic(name = "orders", pubsubName = "pizzapubsub")
     @PostMapping("/orders-sub")
     public Mono<ResponseEntity<Void>> handleOrderUpdate(@RequestBody Order order) {
         logger.info("Received order update for order {}", order.getOrderId());
